@@ -1,4 +1,3 @@
-<body>
 var maskwater = function(image) {
 var waterOcc = ee.Image("JRC/GSW1_0/GlobalSurfaceWater").select('occurrence'),
   jrc_data0 = ee.Image("JRC/GSW1_0/Metadata").select('total_obs').lte(0),
@@ -67,4 +66,3 @@ Export.image.toDrive({
   description: 'Summary NO2 Tahun 2020',
   scale: 1000
 });
-</body>
