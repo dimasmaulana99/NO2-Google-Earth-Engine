@@ -1,0 +1,70 @@
+<body>
+var maskwater = function(image) {
+var waterOcc = ee.Image("JRC/GSW1_0/GlobalSurfaceWater").select('occurrence'),
+  jrc_data0 = ee.Image("JRC/GSW1_0/Metadata").select('total_obs').lte(0),
+  waterOccFilled = waterOcc.unmask(0).max(jrc_data0),
+  waterMask = waterOccFilled.lt(95)
+  return image.updateMask(waterMask);
+}
+
+var year19 = ee.ImageCollection("COPERNICUS/S5P/NRTI/L3_NO2")
+        .select('NO2_column_number_density')
+        .filterBounds(jawa)  
+        .filterDate('2019-01-01', '2019-08-31')
+        .map(maskwater)
+        .sum() 
+        
+var year20 = ee.ImageCollection("COPERNICUS/S5P/NRTI/L3_NO2")
+        .select('NO2_column_number_density')
+        .filterBounds(jawa)
+        .filterDate('2020-01-01', '2020-08-31')
+        .map(maskwater)
+        .sum()
+        
+
+var stacked_composite = year19.addBands(year20);
+
+print('NO2', stacked_composite.bandNames());
+
+var options = {
+title: 'Grafik Summary Kadar NO2 Tahunan',
+hAxis: {title: 'Periode Waktu'},
+vAxis: {title: 'Kadar NO2'},
+lineWidth: 1,
+pointSize: 4,
+};
+
+var time = [0, 1];
+
+var chart = ui.Chart.image.regions(
+  stacked_composite, jawa, ee.Reducer.mean(), 30, 'label', time)
+  .setChartType('ScatterChart')
+  .setOptions(options);
+print(chart);
+
+var band_viz = {
+  min: 0,
+  max: 0.08,
+  palette: ['black', 'pink', 'purple', 'cyan', 'green', 'yellow', 'red']
+};
+
+var clip1 = year19.clip(jawa);
+var clip2 = year20.clip(jawa);
+
+
+Map.addLayer(clip1, band_viz, 'NO2 TAHUN 2019');
+Map.addLayer(clip2, band_viz, 'NO2 TAHUN 2020');
+
+Map.centerObject (jawa, 6);
+Export.image.toDrive({
+  image: clip1,
+  description: 'Summary NO2 Tahun 2019',
+  scale: 1000
+});
+
+Export.image.toDrive({
+  image: clip2,
+  description: 'Summary NO2 Tahun 2020',
+  scale: 1000
+});
+</body>
